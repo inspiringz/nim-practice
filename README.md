@@ -1,7 +1,5 @@
 # nim-practice
 
-![nim](https://nim-lang.org/assets/img/logo.svg)
-
 Learning toys written by nim-lang 👑
 
 ## 📌 List
@@ -10,4 +8,6 @@ Learning toys written by nim-lang 👑
 
 - [fofa](./fofa/) - Yet another fofa CLI tool, which batch export query data to xlsx.
 
+---
 
+![nim](https://nim-lang.org/assets/img/logo.svg)
