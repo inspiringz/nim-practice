@@ -5,7 +5,10 @@ import nimlibxlsxwriter/xlsxwriter, strutils, times
 # Worksheet name cannot contain invalid characters: '[ ] : * ? / \'
 proc cleansn(sheetname: string): string =
   result = sheetname.replace(re"[\[\]:\*\?/\\]+", "-")
-  return result
+  if result.len > 30:
+    return result[0..30]
+  else:
+    return result
 
 proc savedata(mail: string, key: string, query: string, rules: string, size: string, output: string): void =
 
