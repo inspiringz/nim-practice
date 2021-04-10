@@ -57,13 +57,6 @@ proc savedata(mail: string, key: string, query: string, rules: string, size: str
         var b64_query: string = base64.encode(query)
         var api_query: string = "https://fofa.so/api/v1/search/all?email={mail}&key={key}&qbase64={b64_query}&size={size}&fields={fields}".fmt
         var result = parseJson(client.getContent(api_query))["results"]
-        discard """const AllChars = {'\x20'..'\x7e'} # ascii_char
-        echo cleansn(query).len, cleansn(query), "我爱你".len, "我爱你"
-        for i in 0..cleansn(query).len-1:
-          echo i, cleansn(query)[i]
-          if cleansn(query)[i] notin AllChars:
-            echo i
-        """
         var worksheet: ptr lxw_worksheet = workbook_add_worksheet(workbook, cleansn(query))
         var title = fields.split(",")
         for i in low(title)..high(title):
@@ -76,26 +69,6 @@ proc savedata(mail: string, key: string, query: string, rules: string, size: str
         echo "Unknown exception!"
         raise
     discard workbook_close(workbook)
-    discard """
-    while true:
-      try:
-        var query: string = rfile.readLine()
-        var b64_query: string = base64.encode(query)
-        var api_query: string = "https://fofa.so/api/v1/search/all?email={mail}&key={key}&qbase64={b64_query}&size={size}&fields={fields}".fmt
-        var result = parseJson(client.getContent(api_query))["results"]
-        var worksheet: ptr lxw_worksheet = workbook_add_worksheet(workbook, cleansn(query))
-        var title = fields.split(",")
-        for i in low(title)..high(title):
-          discard worksheet_write_string(worksheet, 0, lxw_col_t(i), title[i], nil)
-        for i in 0..<len(result):
-          for j in 0..<len(result[i]):
-            discard worksheet_write_string(worksheet, lxw_col_t(i + 1), lxw_col_t(j), result[i][j].getStr(), nil)
-        echo "[*] query {query} done!".fmt
-      except:
-        discard workbook_close(workbook)
-        break
-    """
-  
 
   
 proc auth(mail: string, key: string, query: string, rules: string, size: string, output: string): void =
