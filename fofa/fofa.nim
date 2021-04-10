@@ -5,10 +5,21 @@ import nimlibxlsxwriter/xlsxwriter, strutils, times
 # Worksheet name cannot contain invalid characters: '[ ] : * ? / \'
 proc cleansn(sheetname: string): string =
   result = sheetname.replace(re"[\[\]:\*\?/\\]+", "-")
+  result = result.replace(re"[']+", "\"")
+  const AllChars = {'\x20'..'\x7e'}
   if result.len > 30:
-    return result[0..30]
-  else:
+    result = result[0..29]
+    if result[^1] notin AllChars:
+      var last = result.len - 1
+      while result[last] notin AllChars:
+        last -= 1
+      var lenx = result.len-1 - last
+      var remainder = lenx mod 3
+      return result[0..result.len-1-remainder] 
     return result
+  if result.len == 0:
+    return "nil"
+  return result
 
 proc savedata(mail: string, key: string, query: string, rules: string, size: string, output: string): void =
 
@@ -41,6 +52,31 @@ proc savedata(mail: string, key: string, query: string, rules: string, size: str
     var workbook: ptr lxw_workbook = workbook_new(output)
     var format: ptr lxw_format = workbook_add_format(workbook)
     format_set_bold(format)
+    for query in rfile.lines:
+      try:
+        var b64_query: string = base64.encode(query)
+        var api_query: string = "https://fofa.so/api/v1/search/all?email={mail}&key={key}&qbase64={b64_query}&size={size}&fields={fields}".fmt
+        var result = parseJson(client.getContent(api_query))["results"]
+        discard """const AllChars = {'\x20'..'\x7e'} # ascii_char
+        echo cleansn(query).len, cleansn(query), "我爱你".len, "我爱你"
+        for i in 0..cleansn(query).len-1:
+          echo i, cleansn(query)[i]
+          if cleansn(query)[i] notin AllChars:
+            echo i
+        """
+        var worksheet: ptr lxw_worksheet = workbook_add_worksheet(workbook, cleansn(query))
+        var title = fields.split(",")
+        for i in low(title)..high(title):
+          discard worksheet_write_string(worksheet, 0, lxw_col_t(i), title[i], nil)
+        for i in 0..<len(result):
+          for j in 0..<len(result[i]):
+            discard worksheet_write_string(worksheet, lxw_col_t(i + 1), lxw_col_t(j), result[i][j].getStr(), nil)
+        echo "[*] query {query} done!".fmt
+      except:
+        echo "Unknown exception!"
+        raise
+    discard workbook_close(workbook)
+    discard """
     while true:
       try:
         var query: string = rfile.readLine()
@@ -58,6 +94,7 @@ proc savedata(mail: string, key: string, query: string, rules: string, size: str
       except:
         discard workbook_close(workbook)
         break
+    """
   
 
   
@@ -91,9 +128,9 @@ when isMainModule:
   color_banner()
 
   let p = newParser:
-    help("\neg: ./fofa -m <email> -k <key> -q '/login.rsp' -s 10000")
-    option("-m", "--mail", default=some(""), help="fofa email account")
-    option("-k", "--key", default=some(""), help="fofa api key")
+    help("\neg: ./fofa -m admin@iswin.org -k ed1b64061c6caa38212832eb3c4ee9b2c -q '/login.rsp' -s 100")
+    option("-m", "--mail", default=some("admin@iswin.org"), help="fofa email account")
+    option("-k", "--key", default=some("057147e45a73fd079595a502f0ca66d6"), help="fofa api key")
     option("-q", "--query", default=some(""), help="query string")
     option("-f", "--file", default=some(""), help="batch query rules file")
     option("-s", "--size", default=some("10000"), help="export data volume")
@@ -134,5 +171,3 @@ when isMainModule:
   echo &"[+] output: {output}"
   let cost_time: float = times.cpuTime() - begin_time
   echo "[+] cost: ", cost_time.formatFloat(ffDecimal, 4), " seconds"
-
-  
