@@ -27,7 +27,6 @@ proc savedata(mail: string, key: string, query: string, rules: string, size: str
   var client = newHttpClient()
 
   if query.len != 0:
-    echo "[*] query: {query} done!".fmt
     var b64_query: string = base64.encode(query)
     var api_query: string = "https://fofa.so/api/v1/search/all?email={mail}&key={key}&qbase64={b64_query}&size={size}&fields={fields}".fmt
     var result = parseJson(client.getContent(api_query))["results"]
@@ -44,6 +43,7 @@ proc savedata(mail: string, key: string, query: string, rules: string, size: str
       for j in 0..<len(result[i]):
         discard worksheet_write_string(worksheet, lxw_col_t(i + 1), lxw_col_t(j), result[i][j].getStr(), nil)
     discard workbook_close(workbook)
+    echo "[*] query {query} done! ({len(result)})".fmt
 
   if rules.len != 0:
     echo "[+] rules: {rules}".fmt
@@ -64,7 +64,7 @@ proc savedata(mail: string, key: string, query: string, rules: string, size: str
         for i in 0..<len(result):
           for j in 0..<len(result[i]):
             discard worksheet_write_string(worksheet, lxw_col_t(i + 1), lxw_col_t(j), result[i][j].getStr(), nil)
-        echo "[*] query {query} done!".fmt
+        echo "[*] query {query} done! ({len(result)})".fmt
       except:
         echo "Unknown exception!"
         raise
@@ -75,13 +75,14 @@ proc auth(mail: string, key: string, query: string, rules: string, size: string,
   var authurl: string = "https://fofa.so/api/v1/info/my?email={mail}&key={key}".fmt
   var client = newHttpClient()
   for i in 1..3:
-    if client.request(authurl).status == "200 OK":
+    if not contains(client.request(authurl).body, "401 Unauthorized"):
       savedata(mail, key, query, rules, size, output)
       break
     elif i < 3:
       continue
     else:
-      echo "[-] ", client.request(authurl).status, " auth failed!"
+      echo "[-] 401 Unauthorized, make sure email and apikey is correct."
+      quit()
     
 proc color_banner(): void =
   let color = [fgRed, fgGreen, fgYellow, fgBlue, fgMagenta, fgCyan, fgWhite]
@@ -101,9 +102,9 @@ when isMainModule:
   color_banner()
 
   let p = newParser:
-    help("\neg: ./fofa -m admin@iswin.org -k ed1b64061c6caa38212832eb3c4ee9b2c -q '/login.rsp' -s 100")
-    option("-m", "--mail", default=some("admin@iswin.org"), help="fofa email account")
-    option("-k", "--key", default=some("057147e45a73fd079595a502f0ca66d6"), help="fofa api key")
+    help("\neg: ./fofa -m <fofa_email_account> -k <fofa_api_key> -q '/login.rsp' -s 10000")
+    option("-m", "--mail", default=some("cnno.1@protonmail.com"), help="fofa email account")
+    option("-k", "--key", default=some("86b1a3ae6a597782a0394041c7d1908c"), help="fofa api key")
     option("-q", "--query", default=some(""), help="query string")
     option("-f", "--file", default=some(""), help="batch query rules file")
     option("-s", "--size", default=some("10000"), help="export data volume")
@@ -144,3 +145,5 @@ when isMainModule:
   echo &"[+] output: {output}"
   let cost_time: float = times.cpuTime() - begin_time
   echo "[+] cost: ", cost_time.formatFloat(ffDecimal, 4), " seconds"
+
+  
