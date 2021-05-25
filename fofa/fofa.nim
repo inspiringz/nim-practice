@@ -103,8 +103,8 @@ when isMainModule:
 
   let p = newParser:
     help("\neg: ./fofa -m <fofa_email_account> -k <fofa_api_key> -q '/login.rsp' -s 10000")
-    option("-m", "--mail", default=some("cnno.1@protonmail.com"), help="fofa email account")
-    option("-k", "--key", default=some("86b1a3ae6a597782a0394041c7d1908c"), help="fofa api key")
+    option("-m", "--mail", default=some(""), help="fofa email account")
+    option("-k", "--key", default=some(""), help="fofa api key")
     option("-q", "--query", default=some(""), help="query string")
     option("-f", "--file", default=some(""), help="batch query rules file")
     option("-s", "--size", default=some("10000"), help="export data volume")
